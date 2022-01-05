@@ -62,7 +62,7 @@ router.post("/login", (req, res) => {
   }
 });
 //generate new access token after expired
-router.post("/token", (req, res) => {
+router.get("/token", (req, res) => {
   try {
     const refreshToken = getAppCookies(req).token;
 
@@ -93,14 +93,14 @@ router.delete("/logout", (req, res) => {
     const refreshToken = getAppCookies(req).token;
 
     refreshTokens = refreshTokens.filter((token) => token !== refreshToken);
-    console.log(refreshTokens);
+    res.clearCookie("token");
     return res
       .status(200)
       .json({ status: true, message: "logged out successfully!" });
   } catch (error) {
     return res
       .status(400)
-      .json({ status: true, message: "Something went wrong!" });
+      .json({ status: false, message: "Something went wrong!" });
   }
 });
 

@@ -81,10 +81,13 @@ require("./models/Contact");
 
 //routes
 const authRoute = require("./routes/authRoute");
-const { cookie } = require("express/lib/response");
+const contactRoute = require("./routes/contactRoute");
+const portfolioRoute = require("./routes/portfolioRoute");
 
 //use routes
 app.use(authRoute);
+app.use(contactRoute);
+app.use(portfolioRoute);
 
 //if any syntax error occurs ------ do at last
 app.use(function (err, req, res, next) {
