@@ -27,6 +27,21 @@ router.get("/portfolio", (req, res) => {
   }
 });
 
+router.get("/photo/:pic", (req, res) => {
+  const filePath = req.params.pic;
+
+  res.sendFile(
+    path.join(__dirname + "/../public/images/" + filePath),
+    (err) => {
+      if (err) {
+        return res
+          .status(404)
+          .json({ status: false, message: "Image Not Found!" });
+      }
+    }
+  );
+});
+
 router.post("/api/portfolio", authenticateToken, (req, res) => {
   PortfolioImgRequirement.single("img")(req, res, function (err) {
     if (req.body.name === "" || req.body.link === "") {
@@ -91,7 +106,7 @@ router.post("/api/portfolio", authenticateToken, (req, res) => {
   });
 });
 
-router.delete("/portfolio/:portfolio", authenticateToken, (req, res) => {
+router.delete("/portfolio/:portfolio", (req, res) => {
   try {
     const id = String(req.params.portfolio);
     Portfolio.find({ img: id }).deleteMany((err, result) => {

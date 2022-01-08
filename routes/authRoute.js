@@ -72,7 +72,7 @@ router.post("/login", async (req, res) => {
           secure: false,
         });
 
-        return res.status(200).json({ accessToken: accessToken });
+        return res.status(200).json({ status: true, accessToken: accessToken });
       } catch (error) {
         return res
           .status(400)
@@ -84,7 +84,7 @@ router.post("/login", async (req, res) => {
     try {
       const otpCodeOfAdmin = await Otp.findOne({ email: String(email) });
 
-      if (otpCodeOfAdmin === null) throw Error();
+      if ((await otpCodeOfAdmin) === null) throw Error();
 
       return res
         .status(200)
@@ -114,7 +114,7 @@ router.post("/login", async (req, res) => {
         from: process.env.EMAIL,
         to: String(email),
         subject: "Verification Code",
-        html: `<h3>Thanks for using our platform!</h3><br/><p>The code is<p><br/><h1>${otpCode}</h1><br/><br/><p>Teams, Zpro</p>`,
+        html: `<h3>Thanks for using our platform!</h3><p>The code is<p><br/><h1>${otpCode}</h1><br/><br/><p>Teams, Zpro</p>`,
       };
 
       //send the mail
@@ -143,17 +143,18 @@ router.get("/token", (req, res) => {
   try {
     const refreshToken = getAppCookies(req).token;
 
-    if (!refreshTokens.includes(refreshToken))
+    if (!refreshTokens.includes(refreshToken)) {
       return res
         .status(400)
-        .json({ status: true, message: "Something went wrong!" });
+        .json({ status: false, message: "Something went wrong!" });
+    }
 
     jwt.verify(
       String(refreshToken),
       process.env.REFRESH_TOKEN_SECRET,
       (err, user) => {
         const accessToken = generateAccessToken({ name: user.name });
-        return res.status(200).json({ accessToken: accessToken });
+        return res.status(200).json({ status: true, accessToken: accessToken });
       }
     );
   } catch (error) {
