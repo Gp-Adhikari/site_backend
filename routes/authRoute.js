@@ -1,8 +1,14 @@
 require("dotenv").config();
 const express = require("express");
 const jwt = require("jsonwebtoken");
+const mongoose = require("mongoose");
+const crypto = require("crypto");
+const nodemailer = require("nodemailer");
 
 const generateAccessToken = require("../middleware/generateAccessToken");
+
+const Admin = mongoose.model("Admin");
+const Otp = mongoose.model("Otp");
 
 const router = express.Router();
 
@@ -25,42 +31,113 @@ const getAppCookies = (req) => {
 };
 
 //login
-router.post("/login", (req, res) => {
+router.post("/login", async (req, res) => {
   try {
     //Auth
-    const username = String(req.body.username);
-    const password = String(req.body.password);
+    const email = String(req.body.email);
+    const code = req.body.code;
 
-    if (
-      username === process.env.ADMIN_USERNAME &&
-      password === process.env.ADMIN_PASSWORD
-    ) {
-      const user = { name: username };
+    const AdminExists = await Admin.findOne({ email: String(email) });
 
-      const accessToken = generateAccessToken(user);
-      const refreshToken = jwt.sign(user, process.env.REFRESH_TOKEN_SECRET);
+    if ((await AdminExists) === null) throw Error();
 
-      refreshTokens.push(refreshToken);
+    //if the code exists on body
+    if (code !== undefined) {
+      try {
+        const otpCodeOfAdminExists = await Otp.findOne({
+          email: String(email),
+        });
 
-      //set refresh token as httponly cookie
-      res.cookie("token", refreshToken, {
-        maxAge: 1000 * 60 * 60 * 24 * 30,
-        httpOnly: true,
-        secure: false,
+        if (
+          otpCodeOfAdminExists === null ||
+          otpCodeOfAdminExists.code !== String(code)
+        )
+          return res
+            .status(400)
+            .json({ status: false, message: "Invalid code." });
+
+        await Otp.findOneAndDelete({ email: String(email) });
+
+        const user = { name: String(email) };
+
+        const accessToken = generateAccessToken(user);
+        const refreshToken = jwt.sign(user, process.env.REFRESH_TOKEN_SECRET);
+
+        refreshTokens.push(refreshToken);
+
+        //set refresh token as httponly cookie
+        res.cookie("token", refreshToken, {
+          maxAge: 1000 * 60 * 60 * 24 * 30,
+          httpOnly: true,
+          secure: false,
+        });
+
+        return res.status(200).json({ accessToken: accessToken });
+      } catch (error) {
+        return res
+          .status(400)
+          .json({ status: false, message: "Invalid code." });
+      }
+    }
+
+    //if the code doesnt exist in the body
+    try {
+      const otpCodeOfAdmin = await Otp.findOne({ email: String(email) });
+
+      if (otpCodeOfAdmin === null) throw Error();
+
+      return res
+        .status(200)
+        .json({ status: true, message: "Code sent Successfully!" });
+    } catch (error) {
+      const otpCode = crypto.randomBytes(6).toString("base64");
+
+      const saveOtp = await Otp({
+        code: otpCode,
+        email: email,
       });
 
-      return res.status(200).json({ accessToken: accessToken });
-    } else {
-      return res
-        .status(401)
-        .json({ status: false, message: "Username or password is incorrect." });
+      //transfer email
+      let transporter = nodemailer.createTransport({
+        host: "smtp.gmail.com",
+        port: 587,
+        secure: false,
+        requireTLS: true,
+        auth: {
+          user: process.env.EMAIL,
+          pass: process.env.PASSWORD,
+        },
+      });
+
+      //mailing option
+      let mailOptions = {
+        from: process.env.EMAIL,
+        to: String(email),
+        subject: "Verification Code",
+        html: `<h3>Thanks for using our platform!</h3><br/><p>The code is<p><br/><h1>${otpCode}</h1><br/><br/><p>Teams, Zpro</p>`,
+      };
+
+      //send the mail
+      transporter.sendMail(mailOptions, async (error, info) => {
+        if (error) {
+          return res
+            .status(400)
+            .json({ status: false, message: "Email doesn't exists!" });
+        }
+
+        await saveOtp.save();
+        return res
+          .status(200)
+          .json({ status: true, message: "Code sent Successfully!" });
+      });
     }
   } catch (error) {
     return res
       .status(401)
-      .json({ status: false, message: "Something went wrong." });
+      .json({ status: false, message: "Permission Denied." });
   }
 });
+
 //generate new access token after expired
 router.get("/token", (req, res) => {
   try {

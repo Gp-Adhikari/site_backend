@@ -78,6 +78,8 @@ require("./models/Portfolio");
 require("./models/VacancyAnnouncement");
 require("./models/VacancyApplicant");
 require("./models/Contact");
+require("./models/Admin");
+require("./models/Otp");
 
 //routes
 const authRoute = require("./routes/authRoute");
