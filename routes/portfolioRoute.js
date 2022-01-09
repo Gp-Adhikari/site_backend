@@ -113,12 +113,13 @@ router.post("/api/portfolio", authenticateToken, (req, res) => {
                 throw Error();
               }
 
-              const safe_path = path
-                .normalize(filename)
-                .replace(/^(\.\.(\/|\\|$))+/, "");
-
               fs.unlinkSync(
-                path.join(__dirname, `/../public/images/${safe_path}`)
+                path.join(
+                  __dirname,
+                  `/../public/images/${path
+                    .normalize(filename)
+                    .replace(/^(\.\.(\/|\\|$))+/, "")}`
+                )
               );
             }
           } catch (error) {
