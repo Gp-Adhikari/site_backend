@@ -8,7 +8,8 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     let ext = path.extname(file.originalname);
-    const originalname = `${uuid()}${ext}`;
+    // const originalname = `${uuid()}${ext}`;
+    const originalname = `${uuid()}.png`;
     cb(null, originalname);
   },
 });

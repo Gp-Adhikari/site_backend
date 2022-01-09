@@ -12,6 +12,43 @@ const authenticateToken = require("../middleware/authenticateToken");
 
 const router = express.Router();
 
+/***********************************/
+const root = "../public/images/";
+const validatePath = (user_input, res) => {
+  try {
+    if (user_input.indexOf("\0") !== -1) {
+      return res.status(401).json({
+        status: false,
+        message: "Sneeky ?? We're not dumb like you idiot.",
+      });
+    }
+    if (!/^[A-Za-z0-9\-]+$/.test(user_input)) return;
+
+    const safe_input = path
+      .normalize(user_input)
+      .replace(/^(\.\.(\/|\\|$))+/, "");
+
+    const path_string = path.join(root, safe_input);
+    if (path_string.indexOf(root) !== -1) {
+      return res.status(401).json({
+        status: false,
+        message: "Sneeky ?? We're not dumb like you idiot.",
+      });
+    }
+
+    return (validPath = {
+      path: String(path_string + ".png"),
+      filename: String(safe_input + ".png"),
+    });
+  } catch (error) {
+    return res.status(401).json({
+      message: "Something went wrong!",
+      status: false,
+    });
+  }
+};
+/***********************************/
+
 router.get("/portfolio", (req, res) => {
   try {
     Portfolio.find({}, (err, portfolios) => {
@@ -32,27 +69,15 @@ router.get("/photo/:pic", (req, res) => {
   try {
     const filePath = req.params.pic;
 
-    const fileMimeType = mime.getType(
-      path.join(__dirname + "/../public/images/" + filePath)
-    );
+    const sanitizedFilePath = validatePath(filePath, res);
 
-    if (
-      fileMimeType != "image/png" &&
-      fileMimeType != "image/jpg" &&
-      fileMimeType != "image/jpeg"
-    ) {
-      throw Error();
-    }
-
-    return res.sendFile(
-      path.join(__dirname + "/../public/images/" + filePath),
-      (err) => {
-        if (err)
-          return res
-            .status(404)
-            .json({ status: false, message: "Image Not Found!" });
+    return res.sendFile(path.join(__dirname, sanitizedFilePath.path), (err) => {
+      if (err) {
+        return res
+          .status(404)
+          .json({ status: false, message: "Image Not Found!" });
       }
-    );
+    });
   } catch (error) {
     return res.status(404).json({ status: false, message: "Image Not Found!" });
   }
@@ -93,34 +118,13 @@ router.post("/api/portfolio", authenticateToken, (req, res) => {
         type: type,
       });
 
+      const sanitizedFilePath = validatePath(req.file.filename, res);
+
       portfolio.save((err) => {
         if (err) {
           try {
-            if (
-              fs.existsSync(
-                path.join(__dirname, `/../public/images/${filename}`)
-              )
-            ) {
-              const fileMimeType = mime.getType(
-                path.join(__dirname + "/../public/images/" + filePath)
-              );
-
-              if (
-                fileMimeType != "image/png" &&
-                fileMimeType != "image/jpg" &&
-                fileMimeType != "image/jpeg"
-              ) {
-                throw Error();
-              }
-
-              fs.unlinkSync(
-                path.join(
-                  __dirname,
-                  `/../public/images/${path
-                    .normalize(filename)
-                    .replace(/^(\.\.(\/|\\|$))+/, "")}`
-                )
-              );
+            if (fs.existsSync(path.join(__dirname, sanitizedFilePath.path))) {
+              fs.unlinkSync(path.join(__dirname, sanitizedFilePath.path));
             }
           } catch (error) {
             return res
@@ -146,44 +150,49 @@ router.post("/api/portfolio", authenticateToken, (req, res) => {
 router.delete("/portfolio/:portfolio", (req, res) => {
   try {
     const id = String(req.params.portfolio);
-    Portfolio.find({ img: id }).deleteMany((err, result) => {
-      if (err) {
-        return res
-          .status(400)
-          .json({ message: "Something went wrong!", status: false });
-      } else {
-        if (fs.existsSync(path.join(__dirname, `../public/images/${id}`))) {
-          fs.stat(
-            path.join(__dirname, `../public/images/${id}`),
-            (err, stats) => {
-              if (err) {
-                return res
-                  .status(400)
-                  .json({ message: "Something went wrong!", status: false });
-              }
 
-              fs.unlink(
-                path.join(__dirname, `../public/images/${id}`),
-                (err) => {
-                  if (err)
-                    return res.status(400).json({
-                      message: "Something went wrong!",
-                      status: false,
-                    });
-                }
-              );
-            }
-          );
-          res.json({
-            Removed: result.deletedCount,
-            message: "Portfolio removed.",
-            status: true,
-          });
+    const sanitizedFilePath = validatePath(id, res);
+
+    Portfolio.find({ img: sanitizedFilePath.filename }).deleteMany(
+      (err, result) => {
+        if (err) {
+          return res
+            .status(400)
+            .json({ message: "Something went wrong!", status: false });
         } else {
-          res.status(200).json({ message: "No data found", status: false });
+          if (fs.existsSync(path.join(__dirname, sanitizedFilePath.path))) {
+            fs.stat(
+              path.join(__dirname, sanitizedFilePath.path),
+              (err, stats) => {
+                if (err) {
+                  return res
+                    .status(400)
+                    .json({ message: "Something went wrong!", status: false });
+                }
+
+                fs.unlink(
+                  path.join(__dirname, sanitizedFilePath.path),
+                  (err) => {
+                    if (err)
+                      return res.status(400).json({
+                        message: "Something went wrong!",
+                        status: false,
+                      });
+                  }
+                );
+              }
+            );
+            res.json({
+              Removed: result.deletedCount,
+              message: "Portfolio removed.",
+              status: true,
+            });
+          } else {
+            res.status(200).json({ message: "No data found", status: false });
+          }
         }
       }
-    });
+    );
   } catch (error) {
     return res
       .status(400)
