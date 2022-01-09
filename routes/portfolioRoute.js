@@ -2,6 +2,7 @@ const express = require("express");
 const path = require("path");
 const multer = require("multer");
 const fs = require("fs");
+const mime = require("mime");
 
 const mongoose = require("mongoose");
 const Portfolio = mongoose.model("Portfolio");
@@ -28,18 +29,33 @@ router.get("/portfolio", (req, res) => {
 });
 
 router.get("/photo/:pic", (req, res) => {
-  const filePath = req.params.pic;
+  try {
+    const filePath = req.params.pic;
 
-  res.sendFile(
-    path.join(__dirname + "/../public/images/" + filePath),
-    (err) => {
-      if (err) {
-        return res
-          .status(404)
-          .json({ status: false, message: "Image Not Found!" });
-      }
+    const fileMimeType = mime.getType(
+      path.join(__dirname + "/../public/images/" + filePath)
+    );
+
+    if (
+      fileMimeType != "image/png" &&
+      fileMimeType != "image/jpg" &&
+      fileMimeType != "image/jpeg"
+    ) {
+      throw Error();
     }
-  );
+
+    return res.sendFile(
+      path.join(__dirname + "/../public/images/" + filePath),
+      (err) => {
+        if (err)
+          return res
+            .status(404)
+            .json({ status: false, message: "Image Not Found!" });
+      }
+    );
+  } catch (error) {
+    return res.status(404).json({ status: false, message: "Image Not Found!" });
+  }
 });
 
 router.post("/api/portfolio", authenticateToken, (req, res) => {
@@ -70,7 +86,7 @@ router.post("/api/portfolio", authenticateToken, (req, res) => {
       const type = parseInt(req.body.type);
 
       const portfolio = new Portfolio({
-        img: filename,
+        img: String(filename),
         name: name,
         link: link,
         desc: desc,
@@ -85,11 +101,31 @@ router.post("/api/portfolio", authenticateToken, (req, res) => {
                 path.join(__dirname, `/../public/images/${filename}`)
               )
             ) {
+              const fileMimeType = mime.getType(
+                path.join(__dirname + "/../public/images/" + filePath)
+              );
+
+              if (
+                fileMimeType != "image/png" &&
+                fileMimeType != "image/jpg" &&
+                fileMimeType != "image/jpeg"
+              ) {
+                throw Error();
+              }
+
+              const safe_path = path
+                .normalize(filename)
+                .replace(/^(\.\.(\/|\\|$))+/, "");
+
               fs.unlinkSync(
-                path.join(__dirname, `/../public/images/${filename}`)
+                path.join(__dirname, `/../public/images/${safe_path}`)
               );
             }
-          } catch (error) {}
+          } catch (error) {
+            return res
+              .status(404)
+              .json({ status: false, message: "Image Not Found!" });
+          }
 
           return res
             .status(400)
