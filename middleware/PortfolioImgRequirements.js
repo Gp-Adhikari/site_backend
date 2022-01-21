@@ -1,18 +1,18 @@
 // const path = require("path");
-const uuid = require("uuid").v4;
+// const uuid = require("uuid").v4;
 const multer = require("multer");
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "./public/images/");
-  },
-  filename: (req, file, cb) => {
-    // let ext = path.extname(file.originalname);
-    // const originalname = `${uuid()}${ext}`;
-    const originalname = `${uuid()}.png`;
-    cb(null, originalname);
-  },
-});
+// const storage = multer.diskStorage({
+//   destination: (req, file, cb) => {
+//     cb(null, "./public/images/");
+//   },
+//   filename: (req, file, cb) => {
+//     // let ext = path.extname(file.originalname);
+//     // const originalname = `${uuid()}${ext}`;
+//     const originalname = `${uuid()}.png`;
+//     cb(null, originalname);
+//   },
+// });
 
 const upload = multer({
   storage: multer.memoryStorage(),
