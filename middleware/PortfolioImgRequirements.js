@@ -1,4 +1,4 @@
-const path = require("path");
+// const path = require("path");
 const uuid = require("uuid").v4;
 const multer = require("multer");
 
@@ -7,7 +7,7 @@ const storage = multer.diskStorage({
     cb(null, "./public/images/");
   },
   filename: (req, file, cb) => {
-    let ext = path.extname(file.originalname);
+    // let ext = path.extname(file.originalname);
     // const originalname = `${uuid()}${ext}`;
     const originalname = `${uuid()}.png`;
     cb(null, originalname);
@@ -15,7 +15,7 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({
-  storage: storage,
+  storage: multer.memoryStorage(),
   fileFilter: (req, file, callback) => {
     if (
       file.mimetype == "image/png" ||
@@ -28,7 +28,7 @@ const upload = multer({
     }
   },
   limits: {
-    fileSize: 1024 * 1024 * 2,
+    fileSize: 1024 * 1024 * 10,
   },
 });
 

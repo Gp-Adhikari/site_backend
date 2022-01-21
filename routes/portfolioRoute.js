@@ -2,7 +2,9 @@ const express = require("express");
 const path = require("path");
 const multer = require("multer");
 const fs = require("fs");
-const mime = require("mime");
+const uuid = require("uuid").v4;
+
+const sharp = require("sharp");
 
 const mongoose = require("mongoose");
 const Portfolio = mongoose.model("Portfolio");
@@ -37,8 +39,8 @@ const validatePath = (user_input, res) => {
     }
 
     return (validPath = {
-      path: String(path_string + ".png"),
-      filename: String(safe_input + ".png"),
+      path: String(path_string + ".jpeg"),
+      filename: String(safe_input + ".jpeg"),
     });
   } catch (error) {
     return res.status(401).json({
@@ -83,8 +85,8 @@ router.get("/photo/:pic", (req, res) => {
   }
 });
 
-router.post("/api/portfolio", authenticateToken, (req, res) => {
-  PortfolioImgRequirement.single("img")(req, res, function (err) {
+router.post("/api/portfolio", async (req, res) => {
+  PortfolioImgRequirement.single("img")(req, res, async function (err) {
     if (req.body.name === "" || req.body.link === "") {
       return res
         .status(400)
@@ -92,19 +94,19 @@ router.post("/api/portfolio", authenticateToken, (req, res) => {
     } else if (err instanceof multer.MulterError) {
       // A Multer error occurred when uploading.
       return res.status(400).json({
-        message: "JPG, JPeG & PNG only and file size should be less than 2MB.",
+        message: "JPG, JPeG & PNG only and file size should be less than 10MB.",
         status: false,
       });
     } else if (err) {
       // An unknown error occurred when uploading.
       return res.status(400).json({
-        message: "JPG, JPeG & PNG only and file size should be less than 2MB.",
+        message: "JPG, JPeG & PNG only and file size should be less than 10MB.",
         status: false,
       });
     }
 
     try {
-      const filename = req.file.filename;
+      const filename = `${uuid()}.jpeg`;
       const name = String(req.body.name);
       const link = String(req.body.link);
       const desc = String(req.body.desc);
@@ -118,7 +120,22 @@ router.post("/api/portfolio", authenticateToken, (req, res) => {
         type: type,
       });
 
-      const sanitizedFilePath = validatePath(req.file.filename, res);
+      //compress image and save it
+      fs.access("./public/images/", (error) => {
+        if (error) {
+          fs.mkdirSync("./public/images/");
+        }
+      });
+      const { buffer } = req.file;
+      const ref = `${filename}`;
+      await sharp(buffer)
+        .rotate()
+        .withMetadata()
+        .webp({ quality: 20 })
+        .toFile("./public/images/" + ref);
+      //
+
+      const sanitizedFilePath = validatePath(filename, res);
 
       portfolio.save((err) => {
         if (err) {
