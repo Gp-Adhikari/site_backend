@@ -164,7 +164,7 @@ router.post("/api/portfolio", async (req, res) => {
   });
 });
 
-router.delete("/portfolio/:portfolio", (req, res) => {
+router.delete("/portfolio/:portfolio", authenticateToken, (req, res) => {
   try {
     const id = String(req.params.portfolio);
 

@@ -85,11 +85,13 @@ require("./models/Otp");
 const authRoute = require("./routes/authRoute");
 const contactRoute = require("./routes/contactRoute");
 const portfolioRoute = require("./routes/portfolioRoute");
+const vacancyRoute = require("./routes/vacancyRoute");
 
 //use routes
 app.use(authRoute);
 app.use(contactRoute);
 app.use(portfolioRoute);
+app.use(vacancyRoute);
 
 //if any syntax error occurs ------ do at last
 app.use(function (err, req, res, next) {
