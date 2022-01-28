@@ -11,13 +11,14 @@
 //dotenv
 require("dotenv").config();
 //imported modules
+const helmet = require("helmet");
 const express = require("express");
 const limitter = require("express-rate-limit");
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
-const helmet = require("helmet");
 const csrf = require("csurf");
+const cors = require("cors");
 
 //multer stuff
 const multer = require("multer");
@@ -32,6 +33,30 @@ const numCpu = os.cpus().length;
 
 const app = express();
 
+//using helmet for security
+app.use(helmet());
+
+//give cors permission
+// const allowedDomains = [
+//   "http://yourdomain.com",
+//   "http://localhost:3000",
+//   "http://localhost:8080",
+// ]; //our site domain
+// app.use(
+//   cors({
+//     origin: function (origin, callback) {
+//       // bypass the requests with no origin (like curl requests, mobile apps, etc )
+//       if (!origin) return callback(null, true);
+
+//       if (allowedDomains.indexOf(origin) === -1) {
+//         const msg = `This site ${origin} does not have an access.`;
+//         return callback(new Error(msg), false);
+//       }
+//       return callback(null, true);
+//     },
+//   })
+// );
+
 //limit file size
 app.use(express.json({ limit: "50mb" }));
 
@@ -43,9 +68,6 @@ app.use(cookieParser());
 
 //csrf protection
 // app.use(csrf({ cookie: { httpOnly: true, secure: false } }));
-
-//using helmet for security
-app.use(helmet());
 
 //prevent ddos and bruteforce
 app.use(

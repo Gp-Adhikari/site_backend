@@ -86,132 +86,185 @@ router.delete("/vacancy/:id", authenticateToken, (req, res) => {
   }
 });
 
-/**************************** Make it from here ******************************************/
-
 // vacancy applicants
 router.get("/vacancy/applicants", authenticateToken, (req, res) => {
-  VacancyApplicant.find({}, (err, applicants) => {
-    err
-      ? res.json({ error: "Something went wrong!" })
-      : res.json({ path: "/vacancy/applicants", applicants });
-  });
+  try {
+    VacancyApplicant.find({}, (err, applicants) => {
+      return err
+        ? res
+            .status(400)
+            .json({ status: false, message: "Something went wrong!" })
+        : res.status(200).json({ status: true, applicants: applicants });
+    });
+  } catch (error) {
+    return res
+      .status(400)
+      .json({ status: false, message: "Something went wrong!" });
+  }
 });
 
 router.get("/vacancy/applicants/:id", authenticateToken, (req, res) => {
-  const id = req.params.id;
+  try {
+    const id = String(req.params.id);
 
-  if (id !== undefined) {
-    VacancyApplicant.findById(id, (err, result) => {
-      if (err) return res.json({ error: "Data doesn't exists!" });
-      else {
-        if (result.vacancyAnnouncedID) {
-          let name;
-          VacancyAnnouncement.findById(
-            result.vacancyAnnouncedID,
-            (err, data) => {
-              err ? (name = "Removed.") : (name = data.title);
+    if (id !== undefined) {
+      VacancyApplicant.findById(id, (err, result) => {
+        if (err)
+          return res.json({ status: false, message: "Data doesn't exists!" });
+        else {
+          if (result.vacancyAnnouncedID) {
+            let name;
+            VacancyAnnouncement.findById(
+              result.vacancyAnnouncedID,
+              (err, data) => {
+                err ? (name = "Removed.") : (name = data.title);
 
-              return res.json({
-                path: "/vacancy/applicants",
-                appliedForTitle: name,
-                result,
-              });
-            }
-          );
-        } else {
-          return res.json({ error: "Something went wrong!" });
+                return res.json({
+                  status: true,
+                  appliedForTitle: name,
+                  result: result,
+                });
+              }
+            );
+          } else {
+            return res
+              .status(400)
+              .json({ status: false, message: "Something went wrong!" });
+          }
         }
-      }
-    });
-  } else {
-    res.json({ error: "Please send ID." });
+      });
+    } else {
+      return res.status(200).json({ status: false, message: "Id is missing!" });
+    }
+  } catch (error) {
+    return res
+      .status(400)
+      .json({ status: false, message: "Something went wrong!" });
   }
 });
 
 router.post("/vacancy/applicants", authenticateToken, (req, res) => {
-  VacancyAppliedRequirement.single("file")(req, res, function (err) {
-    if (req.body.applicantName === "") {
-      res.json({ error: "Name field is empty!" });
-    } else if (err instanceof multer.MulterError) {
-      // A Multer error occurred when uploading.
-      res.json({ error: "PDF only." });
-    } else if (err) {
-      // An unknown error occurred when uploading.
-      res.json({ error: "PDF only." });
-    }
+  try {
+    VacancyAppliedRequirement.single("file")(req, res, function (err) {
+      if (req.body.applicantName === "") {
+        res.json({ status: false, message: "Name field is empty!" });
+      } else if (err instanceof multer.MulterError) {
+        // A Multer error occurred when uploading.
+        res.json({ status: false, message: "PDF only." });
+      } else if (err) {
+        // An unknown error occurred when uploading.
+        res.json({ status: false, message: "PDF only." });
+      }
 
-    if (req.body.filename) {
-      const filename = req.file.filename;
-      const { vacancyAnnouncedID, applicantName, email, ph, address, desc } =
-        req.body;
+      if (req.file.filename) {
+        const filename = req.file.filename;
+        const { vacancyAnnouncedID, applicantName, email, ph, address, desc } =
+          req.body;
 
-      const applicant = new VacancyApplicant({
-        vacancyAnnouncedID: vacancyAnnouncedID,
-        applicantName: applicantName,
-        email: email,
-        ph: ph,
-        address: address,
-        desc: desc,
-        file: filename,
-      });
-      applicant.save((err) => {
-        err ? res.json(err) : res.json("success");
-      });
-    } else {
-      const { vacancyAnnouncedID, applicantName, email, ph, address, desc } =
-        req.body;
+        const applicant = new VacancyApplicant({
+          vacancyAnnouncedID: String(vacancyAnnouncedID),
+          applicantName: String(applicantName),
+          email: String(email),
+          ph: parseInt(ph),
+          address: String(address),
+          desc: String(desc),
+          file: filename,
+        });
+        applicant.save((err) => {
+          return err
+            ? res
+                .status(400)
+                .json({ status: false, message: "Something went wrong!" })
+            : res.json({ status: true, message: "success" });
+        });
+      } else {
+        const { vacancyAnnouncedID, applicantName, email, ph, address, desc } =
+          req.body;
 
-      const applicant = new VacancyApplicant({
-        vacancyAnnouncedID: vacancyAnnouncedID,
-        applicantName: applicantName,
-        email: email,
-        ph: ph,
-        address: address,
-        desc: desc,
-      });
-      applicant.save((err) => {
-        err ? res.json(err) : res.json("success");
-      });
-    }
-  });
+        const applicant = new VacancyApplicant({
+          vacancyAnnouncedID: String(vacancyAnnouncedID),
+          applicantName: String(applicantName),
+          email: String(email),
+          ph: parseInt(ph),
+          address: String(address),
+          desc: String(desc),
+        });
+        applicant.save((err) => {
+          return err
+            ? res
+                .status(400)
+                .json({ status: false, message: "Something went wrong!" })
+            : res.json({ status: true, message: "success" });
+        });
+      }
+    });
+  } catch (error) {
+    return res
+      .status(400)
+      .json({ status: false, message: "Something went wrong!" });
+  }
 });
 
 router.delete("/vacancy/applicants", authenticateToken, (req, res) => {
-  const filename = req.body.id;
+  try {
+    const filename = String(req.body.id);
 
-  VacancyApplicant.find({ file: filename }).deleteMany((err, result) => {
-    if (err) return res.json({ error: "Something went wrong!" });
-    else {
-      if (
-        fs.existsSync(
-          path.join(__dirname, `../public/AppliedApplicant/${filename}`)
-        )
-      ) {
-        fs.stat(
-          path.join(__dirname, `../public/AppliedApplicant/${filename}`),
-          (err, stats) => {
-            if (err) {
-              return res.json({ error: "Something went wrong!" });
-            }
-
-            fs.unlink(
-              path.join(__dirname, `../public/AppliedApplicant/${filename}`),
-              (err) => {
-                if (err) return res.json({ error: "Something went wrong!" });
+    VacancyApplicant.find({ file: filename }).deleteMany((err, result) => {
+      if (err)
+        return res
+          .status(400)
+          .json({ status: false, message: "Something went wrong!" });
+      else {
+        if (
+          fs.existsSync(
+            path.join(__dirname, `../public/AppliedApplicant/${filename}`)
+          )
+        ) {
+          fs.stat(
+            path.join(__dirname, `../public/AppliedApplicant/${filename}`),
+            (err, stats) => {
+              if (err) {
+                return res
+                  .status(400)
+                  .json({ status: false, message: "Something went wrong!" });
               }
-            );
-          }
-        );
-        res.json({ Removed: result.deletedCount });
-      } else {
-        if (result.deletedCount >= 0) {
-          res.json({ Removed: result.deletedCount });
+
+              fs.unlink(
+                path.join(__dirname, `../public/AppliedApplicant/${filename}`),
+                (err) => {
+                  if (err)
+                    return res.status(400).json({
+                      status: false,
+                      message: "Something went wrong!",
+                    });
+                }
+              );
+            }
+          );
+          return res.json({
+            status: true,
+            message: "Removed.",
+            Removed: result.deletedCount,
+          });
         } else {
-          res.json("No data found");
+          if (result.deletedCount >= 0) {
+            return res.json({
+              status: true,
+              message: "Removed.",
+              Removed: result.deletedCount,
+            });
+          } else {
+            return res.json("No data found");
+          }
         }
       }
-    }
-  });
+    });
+  } catch (error) {
+    return res.status(400).json({
+      status: false,
+      message: "Something went wrong!",
+    });
+  }
 });
 
 module.exports = router;
