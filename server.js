@@ -67,7 +67,7 @@ app.use(bodyParser.json());
 app.use(cookieParser());
 
 //csrf protection
-// app.use(csrf({ cookie: { httpOnly: true, secure: false } }));
+app.use(csrf({ cookie: { httpOnly: true, secure: false } }));
 
 //prevent ddos and bruteforce
 app.use(
@@ -108,6 +108,11 @@ const authRoute = require("./routes/authRoute");
 const contactRoute = require("./routes/contactRoute");
 const portfolioRoute = require("./routes/portfolioRoute");
 const vacancyRoute = require("./routes/vacancyRoute");
+
+//get csrf token
+app.get("/", (req, res) => {
+  return res.status(200).send({ status: true, csrfToken: req.csrfToken() });
+});
 
 //use routes
 app.use(authRoute);
