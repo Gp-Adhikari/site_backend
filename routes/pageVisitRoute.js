@@ -20,14 +20,14 @@ router.get("/pageVisits", authenticateToken, async (req, res) => {
         parseInt(new Date().getDate()) ===
         parseInt(visitsPerDay.createdAt.split("-")[0])
       ) {
-        todayVisits = visitsPerDay.counter.toLocaleString();
+        todayVisits = visitsPerDay.counter;
       }
       //yestarday's visits
       if (
         parseInt(new Date().getDate()) - 1 ===
         parseInt(visitsPerDay.createdAt.split("-")[0])
       ) {
-        yesterdayVisits = visitsPerDay.counter.toLocaleString();
+        yesterdayVisits = visitsPerDay.counter;
       }
     });
     return res.status(200).json({
