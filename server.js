@@ -19,6 +19,7 @@ const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const csrf = require("csurf");
 const cors = require("cors");
+const path = require("path");
 
 //multer stuff
 const multer = require("multer");
@@ -35,6 +36,37 @@ const app = express();
 
 //using helmet for security
 app.use(helmet());
+
+// app.use(express.static(path.join(__dirname + "/public")));
+
+//cors
+app.use(
+  cors({
+    credentials: true,
+    origin: ["http://localhost:3000", "*"],
+    // exposedHeaders: ["set-cookie"],
+  })
+);
+
+app.use(function (req, res, next) {
+  res.header("Access-Control-Allow-Credentials", true);
+  res.header("Access-Control-Allow-Origin", req.headers.origin);
+  res.header(
+    "Access-Control-Allow-Methods",
+    "GET,PUT,POST,DELETE,UPDATE,OPTIONS"
+  );
+  res.header(
+    "Access-Control-Allow-Headers",
+    "X-Requested-With, X-HTTP-Method-Override, Content-Type, Accept"
+  );
+  next();
+});
+
+app.use((req, res, next) => {
+  res.removeHeader("Cross-Origin-Resource-Policy");
+  res.removeHeader("Cross-Origin-Embedder-Policy");
+  next();
+});
 
 //give cors permission
 // const allowedDomains = [
@@ -70,17 +102,17 @@ app.use(cookieParser());
 app.use(csrf({ cookie: { httpOnly: true, secure: false } }));
 
 //prevent ddos and bruteforce
-app.use(
-  limitter({
-    windowMs: 10 * 1000, //10 sec
-    max: 5, //5 requests max
-    message: {
-      code: 429,
-      status: false,
-      message: "Too many requests, Please try again later.",
-    },
-  })
-);
+// app.use(
+//   limitter({
+//     windowMs: 1 * 1000, //1 sec
+//     max: 5, //5 requests max
+//     message: {
+//       code: 429,
+//       status: false,
+//       message: "Too many requests, Please try again later.",
+//     },
+//   })
+// );
 
 //connecting to mongodb
 mongoose.connect(process.env.URI);

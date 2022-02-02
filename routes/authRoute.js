@@ -143,7 +143,7 @@ router.get("/token", (req, res) => {
   try {
     const refreshToken = getAppCookies(req).token;
 
-    if (!refreshTokens.includes(refreshToken)) {
+    if (!refreshTokens.includes(String(refreshToken))) {
       return res
         .status(400)
         .json({ status: false, message: "Something went wrong!" });
