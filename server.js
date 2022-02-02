@@ -130,16 +130,65 @@ require("./models/VacancyApplicant");
 require("./models/Contact");
 require("./models/Admin");
 require("./models/Otp");
+require("./models/PageVisit");
 
 //routes
 const authRoute = require("./routes/authRoute");
 const contactRoute = require("./routes/contactRoute");
 const portfolioRoute = require("./routes/portfolioRoute");
 const vacancyRoute = require("./routes/vacancyRoute");
+const pageVisitsRoute = require("./routes/pageVisitRoute");
 
 //get csrf token
-app.get("/", (req, res) => {
+app.get("/csrf", (req, res) => {
   return res.status(200).send({ status: true, csrfToken: req.csrfToken() });
+});
+
+const PageVisit = mongoose.model("PageVisit");
+
+app.get("/", (req, res) => {
+  const date =
+    new Date().getDate() +
+    "-" +
+    (new Date().getMonth() + 1) +
+    "-" +
+    new Date().getFullYear();
+
+  PageVisit.find({}, (err, data) => {
+    try {
+      let dataFound = false;
+
+      //search if today's counter record exists
+      data.map((visitsPerDay) => {
+        if (
+          parseInt(new Date().getDate()) ===
+          parseInt(visitsPerDay.createdAt.split("-")[0])
+        ) {
+          //if today's counter record exists set data found to true
+          dataFound = true;
+          //update the counter by 1
+          PageVisit.findByIdAndUpdate(
+            `${visitsPerDay._id}`,
+            {
+              counter: visitsPerDay.counter + 1,
+            },
+            (err, data) => {}
+          );
+        }
+      });
+
+      //if the counter field for today doesnt exists
+      if (!dataFound) {
+        const visits = new PageVisit({
+          counter: 1,
+          createdAt: date,
+        });
+
+        visits.save();
+      }
+    } catch (error) {}
+    return res.status(200).json({ status: true, message: "Welcome!" });
+  });
 });
 
 //use routes
@@ -147,6 +196,7 @@ app.use(authRoute);
 app.use(contactRoute);
 app.use(portfolioRoute);
 app.use(vacancyRoute);
+app.use(pageVisitsRoute);
 
 //if any syntax error occurs ------ do at last
 app.use(function (err, req, res, next) {
