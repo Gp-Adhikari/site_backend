@@ -13,13 +13,11 @@ require("dotenv").config();
 //imported modules
 const helmet = require("helmet");
 const express = require("express");
-const limitter = require("express-rate-limit");
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const csrf = require("csurf");
 const cors = require("cors");
-const path = require("path");
 
 //multer stuff
 const multer = require("multer");
@@ -36,8 +34,6 @@ const app = express();
 
 //using helmet for security
 app.use(helmet());
-
-// app.use(express.static(path.join(__dirname + "/public")));
 
 //cors
 app.use(

@@ -10,6 +10,8 @@ const VacancyApplicant = mongoose.model("VacancyApplicant");
 const VacancyAppliedRequirement = require("../middleware/VacancyAppliedRequirements");
 const authenticateToken = require("../middleware/authenticateToken");
 
+const rateLimiter = require("../middleware/rateLimiter");
+
 const router = express.Router();
 
 router.get("/vacancy", (req, res) => {
@@ -143,7 +145,7 @@ router.get("/vacancy/applicants/:id", authenticateToken, (req, res) => {
   }
 });
 
-router.post("/vacancy/applicants", authenticateToken, (req, res) => {
+router.post("/vacancy/applicants", rateLimiter, (req, res) => {
   try {
     VacancyAppliedRequirement.single("file")(req, res, function (err) {
       if (req.body.applicantName === "") {
