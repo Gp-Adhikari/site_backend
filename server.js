@@ -95,7 +95,7 @@ app.use(bodyParser.json());
 app.use(cookieParser());
 
 //csrf protection
-// app.use(csrf({ cookie: { httpOnly: true, secure: false } }));
+app.use(csrf({ cookie: { httpOnly: true, secure: false } }));
 
 //prevent ddos and bruteforce
 // app.use(
@@ -132,6 +132,7 @@ require("./models/Contact");
 require("./models/Admin");
 require("./models/Otp");
 require("./models/PageVisit");
+require("./models/TotalVisits");
 
 //routes
 const authRoute = require("./routes/authRoute");
@@ -146,6 +147,7 @@ app.get("/csrf", (req, res) => {
 });
 
 const PageVisit = mongoose.model("PageVisit");
+const TotalVisit = mongoose.model("TotalVisit");
 
 app.get("/", (req, res) => {
   const date =
@@ -155,6 +157,23 @@ app.get("/", (req, res) => {
     "-" +
     new Date().getFullYear();
 
+  //total visit counter
+  TotalVisit.find({}, (err, data) => {
+    try {
+      const id = String(data[0]._id);
+      TotalVisit.findByIdAndUpdate(
+        `${id}`,
+        {
+          visit: parseInt(data[0].visit) + 1,
+        },
+        (err, data) => {}
+      );
+    } catch (error) {
+      TotalVisit({
+        visit: 1,
+      }).save();
+    }
+  });
   PageVisit.find({}, (err, data) => {
     try {
       let dataFound = false;

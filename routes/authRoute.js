@@ -81,9 +81,11 @@ router.post("/login", async (req, res) => {
                 secure: false,
               });
 
-              return res
-                .status(200)
-                .json({ status: true, accessToken: accessToken });
+              return res.status(200).json({
+                status: true,
+                admin: String(email),
+                accessToken: accessToken,
+              });
             } catch (error) {
               RefreshToken({
                 refreshToken: refreshToken,
@@ -97,9 +99,11 @@ router.post("/login", async (req, res) => {
                 secure: false,
               });
 
-              return res
-                .status(200)
-                .json({ status: true, accessToken: accessToken });
+              return res.status(200).json({
+                status: true,
+                admin: String(email),
+                accessToken: accessToken,
+              });
             }
           });
         } catch (error) {
@@ -197,7 +201,9 @@ router.get("/token", (req, res) => {
       process.env.REFRESH_TOKEN_SECRET,
       (err, user) => {
         const accessToken = generateAccessToken({ name: user.name });
-        return res.status(200).json({ status: true, accessToken: accessToken });
+        return res
+          .status(200)
+          .json({ status: true, admin: user.name, accessToken: accessToken });
       }
     );
   } catch (error) {

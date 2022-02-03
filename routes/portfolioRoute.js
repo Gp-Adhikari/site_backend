@@ -137,7 +137,7 @@ router.post("/api/portfolio", async (req, res) => {
         .flatten({ background: { r: 0, g: 0, b: 0, alpha: 0 } })
         .rotate()
         .withMetadata()
-        .webp({ quality: 40 })
+        // .webp({ quality: 90 })
         .toFile("./public/images/" + ref);
       //
 
