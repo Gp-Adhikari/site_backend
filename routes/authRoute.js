@@ -6,7 +6,9 @@ const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 
 const generateAccessToken = require("../middleware/generateAccessToken");
+const removeRefreshToken = require("../middleware/removeRefreshToken");
 
+const RefreshToken = mongoose.model("RefreshToken");
 const Admin = mongoose.model("Admin");
 const Otp = mongoose.model("Otp");
 
@@ -63,16 +65,48 @@ router.post("/login", async (req, res) => {
         const accessToken = generateAccessToken(user);
         const refreshToken = jwt.sign(user, process.env.REFRESH_TOKEN_SECRET);
 
-        refreshTokens.push(refreshToken);
+        try {
+          RefreshToken.findOne({ email: String(email) }, (err, data) => {
+            if (err) {
+              return res
+                .status(400)
+                .json({ status: false, message: "Something went wrong!" });
+            }
 
-        //set refresh token as httponly cookie
-        res.cookie("token", refreshToken, {
-          maxAge: 1000 * 60 * 60 * 24 * 30,
-          httpOnly: true,
-          secure: false,
-        });
+            try {
+              //set refresh token as httponly cookie
+              res.cookie("token", data.refreshToken, {
+                maxAge: 1000 * 60 * 60 * 24 * 30,
+                httpOnly: true,
+                secure: false,
+              });
 
-        return res.status(200).json({ status: true, accessToken: accessToken });
+              return res
+                .status(200)
+                .json({ status: true, accessToken: accessToken });
+            } catch (error) {
+              RefreshToken({
+                refreshToken: refreshToken,
+                email: email,
+              }).save();
+
+              //set refresh token as httponly cookie
+              res.cookie("token", refreshToken, {
+                maxAge: 1000 * 60 * 60 * 24 * 30,
+                httpOnly: true,
+                secure: false,
+              });
+
+              return res
+                .status(200)
+                .json({ status: true, accessToken: accessToken });
+            }
+          });
+        } catch (error) {
+          return res
+            .status(400)
+            .json({ status: false, message: "Something went wrong!" });
+        }
       } catch (error) {
         return res
           .status(400)
@@ -80,56 +114,58 @@ router.post("/login", async (req, res) => {
       }
     }
 
-    //if the code doesnt exist in the body
-    try {
-      const otpCodeOfAdmin = await Otp.findOne({ email: String(email) });
+    if (code === undefined) {
+      //if the code doesnt exist in the body
+      try {
+        const otpCodeOfAdmin = await Otp.findOne({ email: String(email) });
 
-      if ((await otpCodeOfAdmin) === null) throw Error();
+        if ((await otpCodeOfAdmin) === null) throw Error();
 
-      return res
-        .status(200)
-        .json({ status: true, message: "Code sent Successfully!" });
-    } catch (error) {
-      const otpCode = crypto.randomBytes(6).toString("base64");
-
-      const saveOtp = await Otp({
-        code: otpCode,
-        email: email,
-      });
-
-      //transfer email
-      let transporter = nodemailer.createTransport({
-        host: "smtp.gmail.com",
-        port: 587,
-        secure: false,
-        requireTLS: true,
-        auth: {
-          user: process.env.EMAIL,
-          pass: process.env.PASSWORD,
-        },
-      });
-
-      //mailing option
-      let mailOptions = {
-        from: process.env.EMAIL,
-        to: String(email),
-        subject: "Verification Code",
-        html: `<h3>Thanks for using our platform!</h3><p>The code is<p><br/><h1>${otpCode}</h1><br/><br/><p>Teams, Zpro</p>`,
-      };
-
-      //send the mail
-      transporter.sendMail(mailOptions, async (error, info) => {
-        if (error) {
-          return res
-            .status(400)
-            .json({ status: false, message: "Email doesn't exists!" });
-        }
-
-        await saveOtp.save();
         return res
           .status(200)
           .json({ status: true, message: "Code sent Successfully!" });
-      });
+      } catch (error) {
+        const otpCode = crypto.randomBytes(6).toString("base64");
+
+        const saveOtp = await Otp({
+          code: otpCode,
+          email: email,
+        });
+
+        //transfer email
+        let transporter = nodemailer.createTransport({
+          host: "smtp.gmail.com",
+          port: 587,
+          secure: false,
+          requireTLS: true,
+          auth: {
+            user: process.env.EMAIL,
+            pass: process.env.PASSWORD,
+          },
+        });
+
+        //mailing option
+        let mailOptions = {
+          from: process.env.EMAIL,
+          to: String(email),
+          subject: "Verification Code",
+          html: `<h3>Thanks for using our platform!</h3><p>The code is<p><br/><h1>${otpCode}</h1><br/><br/><p>Teams, Zpro</p>`,
+        };
+
+        //send the mail
+        transporter.sendMail(mailOptions, async (error, info) => {
+          if (error) {
+            return res
+              .status(400)
+              .json({ status: false, message: "Email doesn't exists!" });
+          }
+
+          await saveOtp.save();
+          return res
+            .status(200)
+            .json({ status: true, message: "Code sent Successfully!" });
+        });
+      }
     }
   } catch (error) {
     return res
@@ -143,11 +179,18 @@ router.get("/token", (req, res) => {
   try {
     const refreshToken = getAppCookies(req).token;
 
-    if (!refreshTokens.includes(String(refreshToken))) {
-      return res
-        .status(400)
-        .json({ status: false, message: "Something went wrong!" });
-    }
+    RefreshToken.findOne(
+      {
+        refreshToken: refreshToken,
+      },
+      (err, data) => {
+        if (err) {
+          return res
+            .status(400)
+            .json({ status: false, message: "Something went wrong!" });
+        }
+      }
+    );
 
     jwt.verify(
       String(refreshToken),
@@ -166,11 +209,8 @@ router.get("/token", (req, res) => {
 });
 
 //logout
-router.delete("/logout", (req, res) => {
+router.delete("/logout", removeRefreshToken, (req, res) => {
   try {
-    const refreshToken = getAppCookies(req).token;
-
-    refreshTokens = refreshTokens.filter((token) => token !== refreshToken);
     res.clearCookie("token");
     return res
       .status(200)

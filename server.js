@@ -95,7 +95,7 @@ app.use(bodyParser.json());
 app.use(cookieParser());
 
 //csrf protection
-app.use(csrf({ cookie: { httpOnly: true, secure: false } }));
+// app.use(csrf({ cookie: { httpOnly: true, secure: false } }));
 
 //prevent ddos and bruteforce
 // app.use(
@@ -124,6 +124,7 @@ mongoose.connection.on("error", () => {
 });
 
 //require models
+require("./models/RefreshToken");
 require("./models/Portfolio");
 require("./models/VacancyAnnouncement");
 require("./models/VacancyApplicant");

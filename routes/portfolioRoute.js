@@ -129,9 +129,15 @@ router.post("/api/portfolio", async (req, res) => {
       const { buffer } = req.file;
       const ref = `${filename}`;
       await sharp(buffer)
+        .resize(388, 233, {
+          kernel: sharp.kernel.nearest,
+          fit: "contain",
+          position: "center",
+        })
+        .flatten({ background: { r: 0, g: 0, b: 0, alpha: 0 } })
         .rotate()
         .withMetadata()
-        .webp({ quality: 20 })
+        .webp({ quality: 40 })
         .toFile("./public/images/" + ref);
       //
 
