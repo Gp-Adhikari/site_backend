@@ -37,7 +37,9 @@ router.post("/vacancy/announcement", authenticateToken, (req, res) => {
       req.body;
 
     if (title === undefined || type === undefined)
-      return res.json({ error: "Something went wrong!" });
+      return res
+        .status(400)
+        .json({ status: false, message: "Something went wrong!" });
 
     const requirementsArray = String(requirements).split("\\");
 

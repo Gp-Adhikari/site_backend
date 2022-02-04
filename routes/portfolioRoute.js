@@ -3,6 +3,7 @@ const path = require("path");
 const multer = require("multer");
 const fs = require("fs");
 const uuid = require("uuid").v4;
+const limitter = require("express-rate-limit");
 
 const sharp = require("sharp");
 
@@ -51,7 +52,34 @@ const validatePath = (user_input, res) => {
 };
 /***********************************/
 
-router.get("/portfolio", (req, res) => {
+router.get(
+  "/portfolio",
+  limitter({
+    windowMs: 5 * 1000, //5 seconds
+    max: 5, //5 requests max
+    message: {
+      code: 429,
+      status: false,
+      message: "Too many submits from this IP, Please try again later.",
+    },
+  }),
+  (req, res) => {
+    try {
+      Portfolio.find({}, (err, portfolios) => {
+        return err
+          ? res
+              .status(400)
+              .json({ message: "Something went wrong!", status: false })
+          : res
+              .status(200)
+              .json({ path: "/portfolio", portfolios, status: true });
+      });
+    } catch (error) {
+      res.status(403).json({ message: "Something went wrong!", status: false });
+    }
+  }
+);
+router.get("/admin/portfolio", authenticateToken, (req, res) => {
   try {
     Portfolio.find({}, (err, portfolios) => {
       return err
