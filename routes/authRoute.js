@@ -14,9 +14,6 @@ const Otp = mongoose.model("Otp");
 
 const router = express.Router();
 
-//store refresh token for admin
-let refreshTokens = [];
-
 //get single cookie from user
 const getAppCookies = (req) => {
   // We extract the raw cookies from the request headers
