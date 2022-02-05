@@ -3,6 +3,8 @@ const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
 
+const limitter = require("express-rate-limit");
+
 const mongoose = require("mongoose");
 const VacancyAnnouncement = mongoose.model("VacancyAnnouncement");
 const VacancyApplicant = mongoose.model("VacancyApplicant");
@@ -14,7 +16,35 @@ const rateLimiter = require("../middleware/rateLimiter");
 
 const router = express.Router();
 
-router.get("/vacancy", (req, res) => {
+router.get(
+  "/vacancy",
+  limitter({
+    windowMs: 5 * 1000, //5 seconds
+    max: 5, //5 requests max
+    message: {
+      code: 429,
+      status: false,
+      message: "Too many submits from this IP, Please try again later.",
+    },
+  }),
+  (req, res) => {
+    try {
+      VacancyAnnouncement.find({}, (err, vacancies) => {
+        if (err) {
+          return res
+            .status(400)
+            .json({ message: "Something went wrong!", status: false });
+        }
+        return res.status(200).json({ status: true, vacancies: vacancies });
+      });
+    } catch (error) {
+      return res
+        .status(400)
+        .json({ message: "Something went wrong!", status: false });
+    }
+  }
+);
+router.get("/admin/vacancy", authenticateToken, (req, res) => {
   try {
     VacancyAnnouncement.find({}, (err, vacancies) => {
       if (err) {
