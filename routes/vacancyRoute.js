@@ -172,7 +172,7 @@ router.get("/vacancy/applicants", authenticateToken, (req, res) => {
   }
 });
 
-router.get("/applicant/:img", (req, res) => {
+router.get("/applicant/:img", authenticateToken, (req, res) => {
   try {
     const filePath = req.params.img;
 
