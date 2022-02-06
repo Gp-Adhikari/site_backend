@@ -16,6 +16,41 @@ const rateLimiter = require("../middleware/rateLimiter");
 
 const router = express.Router();
 
+const root = "../public/AppliedApplicant/";
+const validatePath = (user_input, res) => {
+  try {
+    if (user_input.indexOf("\0") !== -1) {
+      return res.status(401).json({
+        status: false,
+        message: "Sneeky ?? We're not dumb like you idiot.",
+      });
+    }
+    if (!/^[A-Za-z0-9\-]+$/.test(user_input)) return;
+
+    const safe_input = path
+      .normalize(user_input)
+      .replace(/^(\.\.(\/|\\|$))+/, "");
+
+    const path_string = path.join(root, safe_input);
+    if (path_string.indexOf(root) !== -1) {
+      return res.status(401).json({
+        status: false,
+        message: "Sneeky ?? We're not dumb like you idiot.",
+      });
+    }
+
+    return (validPath = {
+      path: String(path_string + ".pdf"),
+      filename: String(safe_input + ".pdf"),
+    });
+  } catch (error) {
+    return res.status(401).json({
+      message: "Something went wrong!",
+      status: false,
+    });
+  }
+};
+
 router.get(
   "/vacancy",
   limitter({
@@ -134,6 +169,23 @@ router.get("/vacancy/applicants", authenticateToken, (req, res) => {
     return res
       .status(400)
       .json({ status: false, message: "Something went wrong!" });
+  }
+});
+
+router.get("/applicant/:img", (req, res) => {
+  try {
+    const filePath = req.params.img;
+
+    const sanitizedFilePath = validatePath(filePath, res);
+
+    return res
+      .status(200)
+      .download(
+        path.join(__dirname, sanitizedFilePath.path),
+        sanitizedFilePath.path
+      );
+  } catch (error) {
+    return res.status(404).json({ status: false, message: "File Not Found!" });
   }
 });
 

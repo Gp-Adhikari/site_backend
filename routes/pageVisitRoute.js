@@ -16,8 +16,17 @@ router.get("/pageVisits", authenticateToken, async (req, res) => {
     let totalVisits = 0;
 
     const totalVisitsDetails = await TotalVisit.find({});
-    if (totalVisitsDetails[0] !== undefined || totalVisitsDetails[0] !== null) {
-      totalVisits = totalVisitsDetails[0].visit;
+
+    try {
+      if (
+        totalVisitsDetails[0] !== undefined ||
+        totalVisitsDetails[0] !== null ||
+        typeof totalVisitsDetails[0] !== "undefined"
+      ) {
+        totalVisits = totalVisitsDetails[0].visit;
+      }
+    } catch (error) {
+      totalVisits = 0;
     }
 
     const pageVisits = await PageVisit.find({});
