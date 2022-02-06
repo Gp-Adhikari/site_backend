@@ -190,17 +190,24 @@ router.get("/token", (req, res) => {
             .status(400)
             .json({ status: false, message: "Something went wrong!" });
         }
-      }
-    );
-
-    jwt.verify(
-      String(refreshToken),
-      process.env.REFRESH_TOKEN_SECRET,
-      (err, user) => {
-        const accessToken = generateAccessToken({ name: user.name });
-        return res
-          .status(200)
-          .json({ status: true, admin: user.name, accessToken: accessToken });
+        if (data === null) {
+          return res
+            .status(400)
+            .json({ status: false, message: "Something went wrong!" });
+        } else {
+          jwt.verify(
+            String(refreshToken),
+            process.env.REFRESH_TOKEN_SECRET,
+            (err, user) => {
+              const accessToken = generateAccessToken({ name: user.name });
+              return res.status(200).json({
+                status: true,
+                admin: user.name,
+                accessToken: accessToken,
+              });
+            }
+          );
+        }
       }
     );
   } catch (error) {
